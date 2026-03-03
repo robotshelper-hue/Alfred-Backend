@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware # Added this
 import uvicorn
 from dotenv import load_dotenv
 
@@ -10,10 +11,23 @@ from routers import auth, gmail, drive, youtube, gemini
 
 app = FastAPI(title="Alfred Voice Agent API", version="1.0.0")
 
+# 1. The "Secret Ingredient" (Session Shield)
+# Place this BEFORE the router inclusions.
+app.add_middleware(
+    SessionMiddleware, 
+    secret_key=os.getenv("SECRET_KEY", "Alfred_Security_2026_Key"), # Use Railway variable or this default
+    same_site="none", 
+    https_only=True
+)
+
+# 2. Border Control (CORS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=[
+        "https://alfred.robotshelper.com", 
+        "http://localhost:5173" # Keep this for local testing if needed
+    ],
+    allow_credentials=True, 
     allow_methods=["*"],
     allow_headers=["*"],
 )
