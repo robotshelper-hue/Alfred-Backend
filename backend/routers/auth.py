@@ -57,3 +57,22 @@ async def logout():
     if os.path.exists(TOKEN_FILE):
         os.remove(TOKEN_FILE)
     return {"message": "Logged out successfully"}
+
+def get_credentials():
+    import os
+    import json
+    from google.oauth2.credentials import Credentials
+    
+    TOKEN_FILE = "tokens.json"
+    if os.path.exists(TOKEN_FILE):
+        with open(TOKEN_FILE, "r") as f:
+            data = json.load(f)
+            # This turns the saved file back into a "Google ID Card"
+            return Credentials(
+                token=data.get("access_token"), # Authlib uses 'access_token'
+                refresh_token=data.get("refresh_token"),
+                token_uri="https://oauth2.googleapis.com/token",
+                client_id=os.getenv("GOOGLE_CLIENT_ID"),
+                client_secret=os.getenv("GOOGLE_CLIENT_SECRET")
+            )
+    return None
