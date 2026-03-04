@@ -33,19 +33,25 @@ async def login(request: Request):
         code_challenge_method="S256"
     )
 
-@router.get("/auth/callback")
+# Change from "/auth/callback" to just "/callback" 
+# because main.py already adds the first "/auth"
+@router.get("/callback") 
 async def auth_callback(request: Request):
     try:
-        # This line is the secret! It pulls the 'memory' from the session
+        # 1. Exchange the code for a token
         token = await oauth.google.authorize_access_token(request)
+        
+        # 2. SAVE the token so Alfred stays logged in
+        with open(TOKEN_FILE, "w") as f:
+            json.dump(token, f)
+
+        # 3. Get user info (optional, for Alfred to know your name)
         user = token.get('userinfo')
         
-        # ... (rest of the VA's existing code to handle the user) ...
-        
-        # Redirect back to your MilesWeb frontend
+        # 4. Redirect home
         return RedirectResponse(url="https://alfred.robotshelper.com/dashboard")
+
     except Exception as e:
-        # This will now show a more helpful error if it fails
         print(f"Detailed OAuth Error: {e}")
         raise HTTPException(status_code=400, detail=f"Authentication failed: {str(e)}")
 
