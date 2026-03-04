@@ -7,7 +7,7 @@ import google.generativeai as genai
 router = APIRouter()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
 ALFRED_SYSTEM_PROMPT = """You are Alfred, a highly sophisticated AI butler assistant serving Sir Horace exclusively.
 
@@ -67,8 +67,9 @@ async def process_command(req: CommandRequest):
         raw = model.generate_content(
             f"{req.message}{context_str}",
             generation_config=genai.types.GenerationConfig(
-                temperature=0.6,
+                temperature=0.1, # Lower temperature = more stable JSON
                 max_output_tokens=400,
+                response_mime_type="application/json", # <--- ADD THIS LINE
             ),
         )
         text = raw.text.strip()
