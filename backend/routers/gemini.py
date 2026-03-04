@@ -8,7 +8,7 @@ from google.genai import types
 router = APIRouter()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash-latest")
 
 ALFRED_SYSTEM_PROMPT = """You are Alfred, a highly sophisticated AI butler assistant serving Sir Horace exclusively.
 
