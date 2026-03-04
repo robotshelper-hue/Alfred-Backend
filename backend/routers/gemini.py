@@ -2,7 +2,8 @@ import os
 import json
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 router = APIRouter()
 
@@ -53,43 +54,43 @@ class CommandRequest(BaseModel):
     context: dict = {}
 
 
+
 @router.post("/process")
 async def process_command(req: CommandRequest):
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not configured.")
+    
     try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel(
-            model_name=GEMINI_MODEL,
-            system_instruction=ALFRED_SYSTEM_PROMPT,
-        )
+        # 1. Initialize the client correctly (No extra comma or parentheses)
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        
+        # 2. Prepare the context
         context_str = f"\nContext: {json.dumps(req.context)}" if req.context else ""
-        raw = model.generate_content(
-            f"{req.message}{context_str}",
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.1, # Lower temperature = more stable JSON
-                max_output_tokens=400,
-                response_mime_type="application/json", # <--- ADD THIS LINE
-            ),
+        
+        # 3. Generate the response
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=f"{req.message}{context_str}",
+            config=types.GenerateContentConfig(
+                system_instruction=ALFRED_SYSTEM_PROMPT,
+                temperature=0.1,
+                response_mime_type="application/json",
+            )
         )
-        text = raw.text.strip()
-        # Strip markdown fences if present
-        for fence in ("```json", "```"):
-            if text.startswith(fence):
-                text = text[len(fence):]
-        if text.endswith("```"):
-            text = text[:-3]
-        return json.loads(text.strip())
-    except json.JSONDecodeError:
+        
+        # 4. Return the parsed JSON directly
+        return response.parsed
+
+    except Exception as exc:
+        print(f"Alfred Logic Error: {str(exc)}")
+        # Provide the butler-style fallback if anything goes wrong
         return {
-            "speech": "I apologise, Sir Horace. I had difficulty interpreting that request. Please try again.",
+            "speech": "I apologize, Sir Horace. I had difficulty interpreting that request. Please try again.",
             "action": "general_response",
             "params": {},
             "requires_confirmation": False,
             "follow_up": None,
         }
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @router.get("/ping")
